@@ -427,7 +427,7 @@ impl ProcessMemory {
     // Memory would be written at 0x00400005
     // If offset is false, it takes an immediate - direct address.
     //
-    pub fn write_memory(&mut self, _address: usize, data: &Vec<u8>, offset: bool) {
+    pub fn write_memory(&self, _address: usize, data: &Vec<u8>, offset: bool) {
         let mut address: usize = _address;
         if offset {
             address = self.base_address + address;
@@ -450,7 +450,7 @@ impl ProcessMemory {
     // Read memory from the process and return a vector. The information about the offset parameter
     // is the same as defined in write_memory()
     //
-    pub fn read_memory(&mut self, _address: usize, size: usize, offset: bool) -> Vec<u8>  {
+    pub fn read_memory(&self, _address: usize, size: usize, offset: bool) -> Vec<u8>  {
         let mut address: usize = _address;
         if offset {
             address = self.base_address + address;
@@ -473,7 +473,7 @@ impl ProcessMemory {
     // Resume the process by resuming the first thread (Windows)
     // or sending a continue signal (Unix)
     //
-    pub fn resume(&mut self) {
+    pub fn resume(&self) {
         #[cfg(target_family = "unix")]
         unsafe { kill(self.pid as _, SIGCONT);}
         #[cfg(target_family = "windows")]
@@ -483,7 +483,7 @@ impl ProcessMemory {
     //
     // Retrieve the first mapping/module loaded into memory for the process
     //
-    pub fn base(&mut self) -> usize {
+    pub fn base(&self) -> usize {
         self.base_address
     }
 }
