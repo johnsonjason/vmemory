@@ -9,9 +9,9 @@ After having to write software working with memory reading/writing in processes 
 Another example is that macOS removes important functionality from ptrace(2) even though it is inherited from the BSD implementation, it removes a lot of functionality such as reading/writing memory via ptrace(2). So instead, code must opt to use mach's vm_write, vm_read_overwrite, and vm_region functions which are entirely undocumented by Apple and as such, may be subject to change.
 
 Examples:
-https://developer.apple.com/documentation/kernel/1585462-vm_write
-https://developer.apple.com/documentation/kernel/1585371-vm_read_overwrite
-https://developer.apple.com/documentation/kernel/1585377-vm_region
+* https://developer.apple.com/documentation/kernel/1585462-vm_write
+* https://developer.apple.com/documentation/kernel/1585371-vm_read_overwrite
+* https://developer.apple.com/documentation/kernel/1585377-vm_region
 
 The actual ptrace(2) implementation by Apple which does not implement PT_WRITE/PT_READ functionality: https://opensource.apple.com/source/xnu/xnu-344.21.74/bsd/kern/mach_process.c.auto.html
 
