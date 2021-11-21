@@ -2,6 +2,9 @@
 use nix::libc::c_long;
 use nix::sys::ptrace;
 
+//
+// This function attempts to make ptrace reads more granular rather than just word-sized reads
+//
 pub fn read_memory(pid: u32, _address: usize, size: usize) -> Result<Vec<u8>, u32> {
 
     let nix_pid = nix::unistd::Pid::from_raw(pid as _);
@@ -25,6 +28,11 @@ pub fn read_memory(pid: u32, _address: usize, size: usize) -> Result<Vec<u8>, u3
     Ok(word_buffer)
 }
 
+//
+// Unlike vm_write (Mach) and WriteProcessMemory (Windows),
+// a write via ptrace is officially documented to bypass the virtual memory page protections
+// This function attempts to make ptrace writes more granular rather than just word-sized writes
+//
 pub fn write_memory(pid: u32, _address: usize, content: &Vec<u8>) -> Result<(), u32> {
     let nix_pid = nix::unistd::Pid::from_raw(pid as _);
     let mut index = 0;
