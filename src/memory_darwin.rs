@@ -34,7 +34,10 @@ pub fn proc_protect(target_task: u32, address: usize, size: usize, protection: i
 // Write the u8 slice to a process at the specified address
 //
 pub fn write_memory(target_task: u32, _address: usize, buffer: &Vec<u8>) -> Result<(), u32> {
-
+    //
+    // Retrieve the current protection of the page where the address being written to is resident
+    // Allow read/write/execute permissions and then perform a write operation
+    //
     let protection = get_protection(target_task, _address as _).unwrap();
     proc_protect(target_task, _address, buffer.len(), VM_PROT_READ | VM_PROT_WRITE | VM_PROT_EXECUTE).unwrap();
 
@@ -47,6 +50,9 @@ pub fn write_memory(target_task: u32, _address: usize, buffer: &Vec<u8>) -> Resu
         )
     };
 
+    //
+    // Restore the page's memory protections
+    //
     proc_protect(target_task, _address, buffer.len(), protection as _).unwrap();
 
     if result != KERN_SUCCESS {
