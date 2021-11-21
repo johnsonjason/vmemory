@@ -27,6 +27,12 @@ fn close_valid_handle(value: HANDLE) -> bool {
     return false;
 }
 
+//
+// A true arbitrary write from a remote process would bypass page protections
+// https://devblogs.microsoft.com/oldnewthing/20181206-00/?p=100415 "How is it that WriteProcessMemory succeeds in writing to read-only memory?"
+// There does not seem to be any guarantee in use that the page protections will change, so this function will change them just in case and then
+// restore them after a write operation was attempted
+//
 pub fn write_memory(process: HANDLE, address: usize, buffer: &Vec<u8>) -> Result<(), u32> {
 
     let mut old_protection: DWORD = 0;
@@ -51,6 +57,13 @@ pub fn write_memory(process: HANDLE, address: usize, buffer: &Vec<u8>) -> Result
             buffer.len(), 
             0 as _
         ) == 0 {
+            VirtualProtectEx(
+                process, 
+                address as _, 
+                buffer.len(), 
+                old_protection, 
+                &mut old_protection
+            );
             return Err(GetLastError())
         }
     }
