@@ -122,7 +122,7 @@ use vmemory::*;
 fn main() {
 
     //
-    // Attach to a process with a process ID (PID) of 6276
+    // Attach to a process with a process ID (PID) of 3145
     // Immediately resume from the ptrace attachment
     //
     let mut test = ProcessMemory::attach_process(3145).unwrap();
