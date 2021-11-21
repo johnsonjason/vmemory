@@ -30,7 +30,12 @@ use nix::libc::{POSIX_SPAWN_START_SUSPENDED, posix_spawn, posix_spawnattr_init, 
 
 use std::ffi::CString;
 
-
+//
+// A handle (or mach port on macOS) to designate access to the task/process
+// A base address indicating the first region of memory in the process
+// A PID to refer to the identifier of the task
+// A thread to refer to the first thread in the process (Windows)
+//
 #[cfg(any(target_os = "macos", target_family = "windows"))]
 pub struct ProcessMemory {
     base_address: usize,
@@ -39,6 +44,11 @@ pub struct ProcessMemory {
     thread: usize,
 }
 
+//
+// macOS and Windows share a ProcessMemory definition because they both have similar concepts: (ports/handles),
+// macOS can ignore the thread field which is generally used for application start-up
+// ptrace on Linux/BSD simply needs a process ID
+//
 #[cfg(target_vendor = "unknown")]
 pub struct ProcessMemory {
     base_address: usize,
@@ -57,6 +67,9 @@ fn close_valid_handle(value: HANDLE) -> bool {
     return false;
 }
 
+//
+// Separate a vector of strings into one string, delimited by space characters
+//
 #[cfg(target_family = "windows")]
 fn delimit(text: &Vec<String>) -> String {
     let mut result: String = String::new();
@@ -120,6 +133,7 @@ fn collect_env() -> Vec<std::ffi::CString> {
 
 //
 // Get the base address for the the first section in the process via procfs
+// Address will be the text value before the first '-' character, convert it to an integer
 //
 #[cfg(target_vendor = "unknown")]
 pub fn get_main_module(pid: u32) -> usize {
@@ -137,6 +151,10 @@ pub fn get_main_module(pid: u32) -> usize {
     0
 }
 
+//
+// Extension of creating a child process, by enabling ptrace(2)
+// Parsing the arguments, and then replacing the module with execv(2)
+//
 #[cfg(target_vendor = "unknown")]
 fn create_reference_process(file_name: &str, arguments: &Vec<String>) {
     ptrace::traceme().unwrap();
@@ -151,6 +169,10 @@ fn create_reference_process(file_name: &str, arguments: &Vec<String>) {
 }
 
 impl ProcessMemory {
+
+    //
+    // Attach to the process (open a handle and retrieve important information)
+    //
     #[cfg(target_family = "windows")]
     pub fn attach_process(pid: u32) -> Option<ProcessMemory> {
         use winapi::um::{processthreadsapi::OpenProcess, winnt::PROCESS_ALL_ACCESS};
@@ -158,12 +180,20 @@ impl ProcessMemory {
         use winapi::um::winnt::HANDLE;
         use crate::memory_windows::get_base_address;
 
+        //
+        // Get access to the process via a handle,
+        // Return a None value if the handle could not be opened
+        //
         let process = unsafe { OpenProcess(PROCESS_ALL_ACCESS, false as _, pid) };
 
         if !is_valid_handle!(process) {
             return None
         }
 
+        //
+        // Get the base address of the first module loaded in the process
+        // Return the ProcessMemory structure which will allow arbitrary read/write operations when successfully unwrapped
+        //
         let base = get_base_address(process, None, pid).unwrap();
 
         Some(
@@ -176,6 +206,9 @@ impl ProcessMemory {
         )
     }
 
+    //
+    // Retrieve a port for the process, for reading/writing memory
+    //
     #[cfg(target_vendor = "apple")]
     pub fn attach_process(pid: u32) -> Option<ProcessMemory> {
         let task = memory_darwin::get_task_for_pid(pid as _);
@@ -196,6 +229,9 @@ impl ProcessMemory {
         )
     }
 
+    //
+    // Attach via ptrace(2) to the process specified by the PID for Linux
+    //
     #[cfg(target_vendor = "unknown")]
     pub fn attach_process(pid: u32) ->  Option<ProcessMemory> {
         let nix_pid = nix::unistd::Pid::from_raw(pid as _);
@@ -205,6 +241,9 @@ impl ProcessMemory {
             Err(_) => return None
         }
 
+        //
+        // Get the contents of /proc/{pid}/maps, returning the base address of first loaded mapping
+        //
         let base = get_main_module(pid);
 
         if base == 0 {
@@ -219,6 +258,11 @@ impl ProcessMemory {
         )
     }
 
+    //
+    // This spawns a process suspended and has to be manually resumed via public self.resume() 
+    // Create a new process via fork() which maps to clone(2) depending on libc
+    // Trace the fork and replace the current image with a new one in create_reference_process  
+    //
     #[cfg(target_vendor = "unknown")]
     pub fn new_process(file_name: &str, arguments: &Vec<String>) -> Option<ProcessMemory> {
         let pid: pid_t = unsafe { fork() };
@@ -229,6 +273,9 @@ impl ProcessMemory {
             _ => ()
         }
 
+        //
+        // Wait for the ptrace(2) and execv(2) operations to be successful
+        //
         unsafe {
             let mut status: i32 = 0;
             waitpid(pid, &mut status, 0);
@@ -237,6 +284,9 @@ impl ProcessMemory {
             }
         }
 
+        //
+        // Get the base address of the first loaded mapping via procfs
+        //
         let base = get_main_module(pid as _);
         
         Some(
@@ -247,6 +297,10 @@ impl ProcessMemory {
         )
     }
 
+    //
+    // Spawn a process suspended using posix_spawn(2)
+    // Later resumed via public self.resume()
+    //
     #[cfg(target_vendor = "apple")]
     pub fn new_process(file_name: &str, arguments: &Vec<String>) -> Option<ProcessMemory> {
         let mut pid: pid_t = 0;
@@ -284,12 +338,18 @@ impl ProcessMemory {
             }
         }
 
+        //
+        // Retrieve the task port for the process for memory manipulation and other task operations
+        //
         let task = memory_darwin::get_task_for_pid(pid as _);
 
         if task == 0 {
             panic!("Failed to get task port for process");
         }
 
+        //
+        // Retrieve the base address via mach_vm_region
+        //
         let base = memory_darwin::get_base_address(task, 1).unwrap();
 
         Some(
@@ -302,6 +362,9 @@ impl ProcessMemory {
         )
     }
 
+    //
+    // Create a new process for Windows, in a suspended state
+    //
     #[cfg(target_family = "windows")]
     pub fn new_process(file_path: &str, args: &Vec<String>) -> Option<ProcessMemory> {
         use winapi::um::{processthreadsapi::{CreateProcessA, PROCESS_INFORMATION, STARTUPINFOA}, winbase::CREATE_SUSPENDED};
@@ -312,9 +375,15 @@ impl ProcessMemory {
         let argv_text = delimit(&args);
         let argv = CString::new(argv_text.as_str()).unwrap();
 
+        //
+        // Retrieve process creation information into these structures (only proc_info is used here, in this case)
+        //
         let mut start_up: STARTUPINFOA = unsafe { std::mem::MaybeUninit::<STARTUPINFOA>::zeroed().assume_init() };
         let mut proc_info: PROCESS_INFORMATION = unsafe { std::mem::MaybeUninit::<PROCESS_INFORMATION>::zeroed().assume_init() };
 
+        //
+        // Create the process and check if the operation failed
+        //
         let result = unsafe {
             CreateProcessA(
                 proc_string.as_ptr(),
@@ -334,6 +403,10 @@ impl ProcessMemory {
             return None;
         }
 
+        //
+        // Get the base address via the remote process's PEB (Process Environment Block)
+        // If this was an attachment, Module32First from Toolhelp would be used
+        //
         let base = get_base_address(proc_info.hProcess, Some(proc_info.hThread), proc_info.dwProcessId).unwrap();
 
         Some(
@@ -346,6 +419,14 @@ impl ProcessMemory {
         )
     }
 
+    //
+    // Write the buffer (vector, identifier: data) at the address in the process
+    // If the offset bool is set to true, then ONLY an offset is given to this function, 
+    // relative to the first mapping/module in the process. Example, the first module is loaded at 0x00400000
+    // offset is set to true, and _address = 5
+    // Memory would be written at 0x00400005
+    // If offset is false, it takes an immediate - direct address.
+    //
     pub fn write_memory(&mut self, _address: usize, data: &Vec<u8>, offset: bool) {
         let mut address: usize = _address;
         if offset {
@@ -365,6 +446,10 @@ impl ProcessMemory {
         }
     }
 
+    //
+    // Read memory from the process and return a vector. The information about the offset parameter
+    // is the same as defined in write_memory()
+    //
     pub fn read_memory(&mut self, _address: usize, size: usize, offset: bool) -> Vec<u8>  {
         let mut address: usize = _address;
         if offset {
@@ -384,6 +469,10 @@ impl ProcessMemory {
         }
     }
 
+    //
+    // Resume the process by resuming the first thread (Windows)
+    // or sending a continue signal (Unix)
+    //
     pub fn resume(&mut self) {
         #[cfg(target_family = "unix")]
         unsafe { kill(self.pid as _, SIGCONT);}
@@ -391,18 +480,27 @@ impl ProcessMemory {
         unsafe { winapi::um::processthreadsapi::ResumeThread(self.thread as _) };
     }
 
+    //
+    // Retrieve the first mapping/module loaded into memory for the process
+    //
     pub fn base(&mut self) -> usize {
         self.base_address
     }
 }
 
 impl Drop for ProcessMemory {
+    //
+    // Close the thread (if present) and process handles
+    //
     #[cfg(target_family = "windows")]
     fn drop(&mut self) {
         close_valid_handle(self.handle as _);
         close_valid_handle(self.thread as _);
     }
 
+    //
+    // Deallocate the task port retrieved from task_for_pid(2)
+    //
     #[cfg(target_os = "macos")]
     fn drop(&mut self) {
         unsafe {
@@ -410,6 +508,9 @@ impl Drop for ProcessMemory {
         }
     }
 
+    //
+    // Detach from the ptrace session
+    //
     #[cfg(target_vendor = "unknown")]
     fn drop(&mut self) {
         let nix_pid = nix::unistd::Pid::from_raw(self.pid as _);
