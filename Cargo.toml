@@ -1,0 +1,18 @@
+[package]
+name = "vmemory"
+version = "0.1.0"
+authors = ["Jason Johnson <jason@johnsonjason.dev>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[target.'cfg(target_os = "macos")'.dependencies]
+mach = { version = "0.3.2" }
+
+[target.'cfg(unix)'.dependencies]
+nix = { version = "0.23.0" } 
+object = { version = "0.27.1"}
+
+[target.'cfg(windows)'.dependencies]
+winapi = { version = "0.3", features = ["processthreadsapi", "winnt", "handleapi", "minwindef", "memoryapi", "fileapi", "winbase", "errhandlingapi", "tlhelp32"] }
+ntapi = { version = "0.2" }
