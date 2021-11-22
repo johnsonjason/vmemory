@@ -38,7 +38,7 @@ Attach to a process with the process ID (PID). Returning a structure in an optio
 memory read/write operations
 
 ```Rust
-ProcessMemory::write_memory(_address: usize, data: &Vec<u8>, offset: bool)
+ProcessMemory::write_memory(&self, _address: usize, data: &Vec<u8>, offset: bool)
 ```
 
 Write memory to the process. The memory to be written is the memory in the `data` parameter, at the location of `_address` in the remote process. The `offset` boolean will specify whether the value of `_address` is an offset relative to the first module/mapping loaded into the process (true), or if it is a direct address value to be written (false)
@@ -50,20 +50,20 @@ Example, the first module is loaded at **0x00400000**
 Memory would be written at **0x00400005**
 
 ```Rust
-ProcessMemory::read_memory(_address: usize, size: usize, offset: bool) -> Vec<u8>
+ProcessMemory::read_memory(&self, _address: usize, size: usize, offset: bool) -> Vec<u8>
 ```
 
 Read memory from the process at the location of `_address`, and read n bytes according to `size`. The rules off the `offset` parameter are the same as specified in
 `ProcessMemory::write_memory()`
 
 ```Rust
-ProcessMemory::resume()
+ProcessMemory::resume(&self)
 ```
 
 Resume the process from a suspended state (SIGCONT on Linux/macOS. ResumeThread on the first thread from CreateProcess on Windows). This should generally only be used for ptrace(2) sessions on Linux, posix_spawn(2) from a suspended state on macOS, or CreateProcess on Windows. Essentially all `ProcessMemory::new_process()` calls will require this function to be called
 
 ```Rust
-ProcessMemory::base()
+ProcessMemory::base(&self)
 ```
 
 Retrieve the base address for the first mapping/module loaded into the process
