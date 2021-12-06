@@ -1,3 +1,6 @@
+//! Read and write the virtual memory of other processes on Windows, Linux, and macOS. This attempts to write memory regardless of memory region protections such as being read-only
+//! 
+//! Examples can be found at https://crates.io/crates/vmemory
 #![allow(unused_imports)]
 #![allow(dead_code)]
 #[cfg(target_family = "windows")]
@@ -136,7 +139,7 @@ fn collect_env() -> Vec<std::ffi::CString> {
 // Address will be the text value before the first '-' character, convert it to an integer
 //
 #[cfg(target_vendor = "unknown")]
-pub fn get_main_module(pid: u32) -> usize {
+fn get_main_module(pid: u32) -> usize {
     use std::fs::File;
     use std::io::BufRead;
     let proc = format!("/proc/{process_id}/maps", process_id=pid);
@@ -170,9 +173,11 @@ fn create_reference_process(file_name: &str, arguments: &Vec<String>) {
 
 impl ProcessMemory {
 
-    //
-    // Attach to the process (open a handle and retrieve important information)
-    //
+    /// Attach via ptrace(2) to the process specified by the PID for Linux
+    /// 
+    /// On Windows this opens a handle to the process
+    /// 
+    /// On macOS this gets the mach task port for the process
     #[cfg(target_family = "windows")]
     pub fn attach_process(pid: u32) -> Option<ProcessMemory> {
         use winapi::um::{processthreadsapi::OpenProcess, winnt::PROCESS_ALL_ACCESS};
@@ -229,8 +234,9 @@ impl ProcessMemory {
         )
     }
 
+
     //
-    // Attach via ptrace(2) to the process specified by the PID for Linux
+    // Ptrace the process and enumerate procfs
     //
     #[cfg(target_vendor = "unknown")]
     pub fn attach_process(pid: u32) ->  Option<ProcessMemory> {
@@ -258,11 +264,16 @@ impl ProcessMemory {
         )
     }
 
-    //
-    // This spawns a process suspended and has to be manually resumed via public self.resume() 
-    // Create a new process via fork() which maps to clone(2) depending on libc
-    // Trace the fork and replace the current image with a new one in create_reference_process  
-    //
+    /// This spawns a process suspended and has to be manually resumed via public self.resume() 
+    /// 
+    /// On Linux, this creates a new process via fork() which maps to clone(2) depending on libc
+    /// ptrace the fork and replace the current image with a new one in create_reference_process
+    /// 
+    /// On Windows, this calls CreateProcess with the flag CREATE_SUSPENDED
+    /// 
+    /// On macOS, this calls posix_spawn(2) with the flag POSIX_SPAWN_START_SUSPENDED
+    /// 
+    /// Accepts a file path, as well as arguments to the new process
     #[cfg(target_vendor = "unknown")]
     pub fn new_process(file_name: &str, arguments: &Vec<String>) -> Option<ProcessMemory> {
         let pid: pid_t = unsafe { fork() };
@@ -408,7 +419,6 @@ impl ProcessMemory {
         // If this was an attachment, Module32First from Toolhelp would be used
         //
         let base = get_base_address(proc_info.hProcess, Some(proc_info.hThread), proc_info.dwProcessId).unwrap();
-
         Some(
             ProcessMemory{
                 base_address: base,
@@ -419,14 +429,18 @@ impl ProcessMemory {
         )
     }
 
-    //
-    // Write the buffer (vector, identifier: data) at the address in the process
-    // If the offset bool is set to true, then ONLY an offset is given to this function, 
-    // relative to the first mapping/module in the process. Example, the first module is loaded at 0x00400000
-    // offset is set to true, and _address = 5
-    // Memory would be written at 0x00400005
-    // If offset is false, it takes an immediate - direct address.
-    //
+    /// Write the buffer (vector, identifier: data) at the address in the process
+    /// 
+    /// If the offset bool is set to true, then **only** an offset is given to this function, 
+    /// relative to the first mapping/module in the process. 
+    /// 
+    /// Example, the first module is loaded at 0x00400000
+    /// 
+    /// offset is set to true, and _address = 5
+    /// 
+    /// Memory would be written at 0x00400005
+    /// 
+    /// If offset is false, it takes an immediate - direct address.
     pub fn write_memory(&self, _address: usize, data: &Vec<u8>, offset: bool) {
         let mut address: usize = _address;
         if offset {
@@ -446,10 +460,21 @@ impl ProcessMemory {
         }
     }
 
-    //
-    // Read memory from the process and return a vector. The information about the offset parameter
-    // is the same as defined in write_memory()
-    //
+    /// Read memory from the process and return a vector.
+    /// If the offset bool is set to true, then **only** an offset is given to this function, 
+    /// relative to the first mapping/module in the process. 
+    /// 
+    /// Example, the first module is loaded at 0x00400000
+    /// 
+    /// offset is set to true, 
+    /// 
+    /// and _address = 5
+    /// 
+    /// Memory would be read from 0x00400005
+    /// 
+    /// If offset is false, it takes an immediate - direct address. 
+    /// 
+    /// For example, _address = 0x00400005
     pub fn read_memory(&self, _address: usize, size: usize, offset: bool) -> Vec<u8>  {
         let mut address: usize = _address;
         if offset {
@@ -469,10 +494,8 @@ impl ProcessMemory {
         }
     }
 
-    //
-    // Resume the process by resuming the first thread (Windows)
-    // or sending a continue signal (Unix)
-    //
+    /// Resume the process by resuming the first thread (Windows)
+    /// or sending a continue signal (Unix)
     pub fn resume(&self) {
         #[cfg(target_family = "unix")]
         unsafe { kill(self.pid as _, SIGCONT);}
@@ -480,9 +503,7 @@ impl ProcessMemory {
         unsafe { winapi::um::processthreadsapi::ResumeThread(self.thread as _) };
     }
 
-    //
-    // Retrieve the first mapping/module loaded into memory for the process
-    //
+    /// Retrieve the first mapping/module loaded into memory for the process
     pub fn base(&self) -> usize {
         self.base_address
     }
