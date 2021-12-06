@@ -1,10 +1,13 @@
 [package]
 name = "vmemory"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Jason Johnson <jason@johnsonjason.dev>"]
 edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+description = "Read and write the memory in other processes for Windows and Unix-based systems regardless of memory page protections."
+keywords = ["reverse-engineering", "debugging", "windows", "linux", "macOS"]
+license = "MIT"
+repository = "https://github.com/johnsonjason/vmemory"
+homepage = "https://github.com/johnsonjason/vmemory"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 mach = { version = "0.3.2" }
