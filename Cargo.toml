@@ -1,6 +1,6 @@
 [package]
 name = "vmemory"
-version = "0.1.1"
+version = "0.1.5"
 authors = ["Jason Johnson <jason@johnsonjason.dev>"]
 edition = "2018"
 description = "Read and write the memory in other processes for Windows and Unix-based systems regardless of memory page protections."
@@ -14,8 +14,7 @@ mach = { version = "0.3.2" }
 
 [target.'cfg(unix)'.dependencies]
 nix = { version = "0.23.0" } 
-object = { version = "0.27.1"}
 
 [target.'cfg(windows)'.dependencies]
-winapi = { version = "0.3", features = ["processthreadsapi", "winnt", "handleapi", "minwindef", "memoryapi", "fileapi", "winbase", "errhandlingapi", "tlhelp32"] }
+winapi = { version = "0.3", features = ["winbase", "errhandlingapi", "memoryapi", "tlhelp32", "processthreadsapi"] }
 ntapi = { version = "0.2" }
