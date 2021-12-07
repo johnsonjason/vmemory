@@ -142,7 +142,7 @@ fn get_protection(target_task: u32, _address: mach_vm_address_t) -> Result<(u32,
 // Referenced from <https://github.com/rbspy/proc-maps/blob/master/src/mac_maps/mod.rs> (MIT)
 // Copyright (c) 2016 Julia Evans, Kamal Marhubi Portions (continuous integration setup) Copyright (c) 2016 Jorge Aparicio
 //
-pub fn get_base_address(target_task: mach_port_name_t, mut address: mach_vm_address_t) -> Result<usize, u32> {
+pub fn get_base_address(target_task: mach_port_name_t, mut address: mach_vm_address_t) -> Result<(usize, usize), u32> {
     let mut count = std::mem::size_of::<vm_region_basic_info_data_64_t>() as mach_msg_type_number_t;
     let mut object_name: mach_port_t = 0;
 
@@ -165,7 +165,7 @@ pub fn get_base_address(target_task: mach_port_name_t, mut address: mach_vm_addr
         return Err(result as _)
     }
 
-    Ok(address as usize)
+    Ok((address as usize, size as usize))
 }
 
 //
