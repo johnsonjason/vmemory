@@ -24,6 +24,8 @@ use winapi::um::handleapi::CloseHandle;
 #[cfg(target_family = "windows")]
 use winapi::um::handleapi::INVALID_HANDLE_VALUE;
 #[cfg(target_family = "windows")]
+use winapi::um::processthreadsapi::TerminateProcess;
+#[cfg(target_family = "windows")]
 use winapi::um::winnt::HANDLE;
 
 use std::mem::MaybeUninit;
@@ -45,6 +47,8 @@ pub struct ProcessMemory {
     handle: usize,
     pid: u32,
     thread: usize,
+    #[cfg(target_os = "macos")]
+    base_size: usize
 }
 
 //
@@ -226,10 +230,11 @@ impl ProcessMemory {
 
         Some(
             ProcessMemory{
-                base_address: base,
+                base_address: base.0,
                 handle: task as _,
                 pid: pid as _,
                 thread: 0,
+                base_size: base.1,
             }
         )
     }
@@ -365,10 +370,11 @@ impl ProcessMemory {
 
         Some(
             ProcessMemory{
-                base_address: base,
+                base_address: base.0,
                 handle: task as _,
                 pid: pid as _,
                 thread: 0,
+                base_size: base.1
             }
         )
     }
@@ -506,6 +512,25 @@ impl ProcessMemory {
     /// Retrieve the first mapping/module loaded into memory for the process
     pub fn base(&self) -> usize {
         self.base_address
+    }
+
+    /// Kill the process by sending a forceful SIGKILL or via TerminateProcess
+    pub fn kill(&self) {
+        #[cfg(target_family = "unix")]
+        unsafe { kill(self.pid as _, SIGKILL);}
+        #[cfg(target_family = "windows")] unsafe {
+            TerminateProcess(self.handle as _, 0);
+        }
+    }
+
+    /// Get the process ID
+    pub fn pid(&self) -> u32 {
+        self.pid
+    }
+
+    #[cfg(target_os = "macos")]
+    pub fn base_size(&self) -> usize {
+        self.base_size
     }
 }
 
