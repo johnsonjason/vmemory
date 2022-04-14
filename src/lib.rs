@@ -156,7 +156,7 @@ fn get_main_module(pid: u32) -> usize {
     let reader = std::io::BufReader::new(file);
 
     for line in reader.lines() {
-        if let Some(token) = line.unwrap().split("-").next() {
+        if let Some(token) = line.unwrap().split('-').next() {
             return usize::from_str_radix(token, 16).unwrap();
         }
     }
@@ -262,7 +262,7 @@ impl ProcessMemory {
 
         Some(ProcessMemory {
             base_address: base,
-            pid: pid,
+            pid,
         })
     }
 
@@ -281,7 +281,7 @@ impl ProcessMemory {
         let pid: pid_t = unsafe { fork() };
 
         match pid {
-            0 => create_reference_process(file_name, &arguments),
+            0 => create_reference_process(file_name, arguments),
             -1 => return None,
             _ => (),
         }
@@ -449,25 +449,25 @@ impl ProcessMemory {
     /// Memory would be written at 0x00400005
     ///
     /// If offset is false, it takes an immediate - direct address.
-    pub fn write_memory(&self, _address: usize, data: &Vec<u8>, offset: bool) {
+    pub fn write_memory(&self, _address: usize, data: &[u8], offset: bool) {
         let mut address: usize = _address;
         if offset {
-            address = self.base_address + address;
+            address += self.base_address;
         }
 
         #[cfg(target_family = "windows")]
         {
-            memory_windows::write_memory(self.handle as _, address, &data).unwrap()
+            memory_windows::write_memory(self.handle as _, address, data).unwrap()
         }
 
         #[cfg(target_os = "macos")]
         {
-            memory_darwin::write_memory(self.handle as _, address, &data).unwrap()
+            memory_darwin::write_memory(self.handle as _, address, data).unwrap()
         }
 
         #[cfg(target_vendor = "unknown")]
         {
-            memory_linux::write_memory(self.pid, address, &data).unwrap()
+            memory_linux::write_memory(self.pid, address, data).unwrap()
         }
     }
 
@@ -489,7 +489,7 @@ impl ProcessMemory {
     pub fn read_memory(&self, _address: usize, size: usize, offset: bool) -> Vec<u8> {
         let mut address: usize = _address;
         if offset {
-            address = self.base_address + address;
+            address += self.base_address;
         }
 
         #[cfg(target_vendor = "unknown")]

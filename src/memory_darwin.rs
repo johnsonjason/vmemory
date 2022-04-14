@@ -41,7 +41,7 @@ pub fn proc_protect(
 //
 // Write the u8 vector to a process at the specified address
 //
-pub fn write_memory(target_task: u32, _address: usize, buffer: &Vec<u8>) -> Result<(), u32> {
+pub fn write_memory(target_task: u32, _address: usize, buffer: &[u8]) -> Result<(), u32> {
     //
     // Retrieve the current protection of the page where the address being written to is resident
     // If setting the region permission fails, read it, unmap it, then re-map it

@@ -31,7 +31,7 @@ pub fn read_memory(pid: u32, _address: usize, size: usize) -> Result<Vec<u8>, u3
 // a write via ptrace is officially documented to bypass the virtual memory page protections
 // This function attempts to make ptrace writes more granular rather than just word-sized writes
 //
-pub fn write_memory(pid: u32, _address: usize, content: &Vec<u8>) -> Result<(), u32> {
+pub fn write_memory(pid: u32, _address: usize, content: &[u8]) -> Result<(), u32> {
     let nix_pid = nix::unistd::Pid::from_raw(pid as _);
     let mut index = 0;
 
