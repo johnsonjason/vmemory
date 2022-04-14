@@ -242,6 +242,7 @@ impl ProcessMemory {
     //
     // Ptrace the process and enumerate procfs
     //
+    #[must_use]
     #[cfg(target_vendor = "unknown")]
     pub fn attach_process(pid: u32) -> Option<ProcessMemory> {
         let nix_pid = nix::unistd::Pid::from_raw(pid as _);
@@ -276,6 +277,7 @@ impl ProcessMemory {
     /// On macOS, this calls posix_spawn(2) with the flag POSIX_SPAWN_START_SUSPENDED
     ///
     /// Accepts a file path, as well as arguments to the new process
+    #[must_use]
     #[cfg(target_vendor = "unknown")]
     pub fn new_process(file_name: &str, arguments: &Vec<String>) -> Option<ProcessMemory> {
         let pid: pid_t = unsafe { fork() };
@@ -486,6 +488,7 @@ impl ProcessMemory {
     /// If offset is false, it takes an immediate - direct address.
     ///
     /// For example, _address = 0x00400005
+    #[must_use]
     pub fn read_memory(&self, _address: usize, size: usize, offset: bool) -> Vec<u8> {
         let mut address: usize = _address;
         if offset {
@@ -522,6 +525,7 @@ impl ProcessMemory {
     }
 
     /// Retrieve the first mapping/module loaded into memory for the process
+    #[must_use]
     pub fn base(&self) -> usize {
         self.base_address
     }
@@ -539,6 +543,7 @@ impl ProcessMemory {
     }
 
     /// Get the process ID
+    #[must_use]
     pub fn pid(&self) -> u32 {
         self.pid
     }
