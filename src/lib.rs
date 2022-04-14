@@ -156,7 +156,7 @@ fn get_main_module(pid: u32) -> usize {
     let reader = std::io::BufReader::new(file);
 
     for line in reader.lines() {
-        for token in line.unwrap().split("-") {
+        if let Some(token) = line.unwrap().split("-").next() {
             return usize::from_str_radix(token, 16).unwrap();
         }
     }
