@@ -277,6 +277,9 @@ impl ProcessMemory {
     /// On macOS, this calls `posix_spawn(2)` with the flag `POSIX_SPAWN_START_SUSPENDED`
     ///
     /// Accepts a file path, as well as arguments to the new process
+    ///
+    /// # Panics
+    /// If the new process could not be created, this function will panic.
     #[must_use]
     #[cfg(target_vendor = "unknown")]
     pub fn new_process(file_name: &str, arguments: &Vec<String>) -> Option<ProcessMemory> {
@@ -451,6 +454,9 @@ impl ProcessMemory {
     /// Memory would be written at 0x00400005
     ///
     /// If offset is false, it takes an immediate - direct address.
+    ///
+    /// # Panics
+    /// If the process fails to write to memory, this function will panic.
     pub fn write_memory(&self, mut address: usize, data: &[u8], offset: bool) {
         if offset {
             address += self.base_address;
@@ -487,6 +493,9 @@ impl ProcessMemory {
     /// If offset is false, it takes an immediate - direct address.
     ///
     /// For example, address = 0x00400005
+    ///
+    /// # Panics
+    /// If the process fails to read from memory, this function will panic.
     #[must_use]
     pub fn read_memory(&self, mut address: usize, size: usize, offset: bool) -> Vec<u8> {
         if offset {
