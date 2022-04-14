@@ -47,9 +47,7 @@ pub fn write_memory(pid: u32, _address: usize, content: &[u8]) -> Result<(), u32
                 return Err(0);
             }
 
-            for n in 0..remaining {
-                store[n] = left_slice[n]
-            }
+            store[..remaining].copy_from_slice(&left_slice[..remaining]);
 
             let mut dst = [0u8; std::mem::size_of::<c_long>()];
             dst.clone_from_slice(&store[0..std::mem::size_of::<c_long>()]);
