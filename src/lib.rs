@@ -446,13 +446,12 @@ impl ProcessMemory {
     ///
     /// Example, the first module is loaded at 0x00400000
     ///
-    /// offset is set to true, and _address = 5
+    /// offset is set to true, and address = 5
     ///
     /// Memory would be written at 0x00400005
     ///
     /// If offset is false, it takes an immediate - direct address.
-    pub fn write_memory(&self, _address: usize, data: &[u8], offset: bool) {
-        let mut address: usize = _address;
+    pub fn write_memory(&self, mut address: usize, data: &[u8], offset: bool) {
         if offset {
             address += self.base_address;
         }
@@ -481,16 +480,15 @@ impl ProcessMemory {
     ///
     /// offset is set to true,
     ///
-    /// and _address = 5
+    /// and address = 5
     ///
     /// Memory would be read from 0x00400005
     ///
     /// If offset is false, it takes an immediate - direct address.
     ///
-    /// For example, _address = 0x00400005
+    /// For example, address = 0x00400005
     #[must_use]
-    pub fn read_memory(&self, _address: usize, size: usize, offset: bool) -> Vec<u8> {
-        let mut address: usize = _address;
+    pub fn read_memory(&self, mut address: usize, size: usize, offset: bool) -> Vec<u8> {
         if offset {
             address += self.base_address;
         }

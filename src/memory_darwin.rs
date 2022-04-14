@@ -41,16 +41,16 @@ pub fn proc_protect(
 //
 // Write the u8 vector to a process at the specified address
 //
-pub fn write_memory(target_task: u32, _address: usize, buffer: &[u8]) -> Result<(), u32> {
+pub fn write_memory(target_task: u32, address: usize, buffer: &[u8]) -> Result<(), u32> {
     //
     // Retrieve the current protection of the page where the address being written to is resident
     // If setting the region permission fails, read it, unmap it, then re-map it
     // Allow read/write/execute permissions and then perform a write operation
     //
-    let _protection = get_protection(target_task, _address as _).unwrap();
-    let region_address = _protection.2;
-    let region_size = _protection.1;
-    let region_protection = _protection.0;
+    let protection = get_protection(target_task, address as _).unwrap();
+    let region_address = protection.2;
+    let region_size = protection.1;
+    let region_protection = protection.0;
 
     match proc_protect(
         target_task,
@@ -65,7 +65,7 @@ pub fn write_memory(target_task: u32, _address: usize, buffer: &[u8]) -> Result<
                 proc_protect(
                     target_task,
                     region_address,
-                    _protection.1,
+                    protection.1,
                     VM_PROT_READ | VM_PROT_WRITE | VM_PROT_EXECUTE,
                 )
                 .unwrap()
@@ -78,7 +78,7 @@ pub fn write_memory(target_task: u32, _address: usize, buffer: &[u8]) -> Result<
     let result = unsafe {
         mach_vm_write(
             target_task,
-            _address as _,
+            address as _,
             buffer.as_ptr() as _,
             buffer.len() as _,
         )
@@ -131,12 +131,11 @@ pub fn read_memory(target_task: u32, address: usize, size: usize) -> Result<Vec<
 //
 fn get_protection(
     target_task: u32,
-    _address: mach_vm_address_t,
+    mut address: mach_vm_address_t,
 ) -> Result<(u32, usize, usize), u32> {
     let mut count = std::mem::size_of::<vm_region_basic_info_data_64_t>() as mach_msg_type_number_t;
     let mut object_name: mach_port_t = 0;
 
-    let mut address = _address;
     let mut size = unsafe { std::mem::zeroed::<mach_vm_size_t>() };
     let mut info =
         unsafe { std::mem::MaybeUninit::<vm_region_basic_info_64>::zeroed().assume_init() };
