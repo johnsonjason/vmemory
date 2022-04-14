@@ -34,7 +34,7 @@ fn close_valid_handle(value: HANDLE) -> bool {
 // restore them after a write operation was attempted
 //
 pub fn write_memory(process: HANDLE, address: usize, buffer: &[u8]) -> Result<(), u32> {
-    let mut old_protection: DWORD = 0;
+    let mut old_protection = 0;
 
     unsafe {
         if VirtualProtectEx(
@@ -86,7 +86,7 @@ pub fn write_memory(process: HANDLE, address: usize, buffer: &[u8]) -> Result<()
 }
 
 pub fn read_memory(process: HANDLE, address: usize, size: usize) -> Result<Vec<u8>, u32> {
-    let mut memory: Vec<u8> = Vec::new();
+    let mut memory = Vec::<u8>::new();
     memory.resize(size, 0);
 
     unsafe {
@@ -114,7 +114,7 @@ pub fn get_base_address(
     const BASE_OFFSET: usize = 0x10;
 
     if thread.is_some() {
-        let mut thread_basic_information: THREAD_BASIC_INFORMATION =
+        let mut thread_basic_information =
             unsafe { std::mem::MaybeUninit::<THREAD_BASIC_INFORMATION>::zeroed().assume_init() };
         let mut return_length: u32 = 0;
 
@@ -169,7 +169,7 @@ pub fn get_base_address(
 
     let snapshot = unsafe { CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, process_id) };
 
-    let mut module_entry: MODULEENTRY32 =
+    let mut module_entry =
         unsafe { std::mem::MaybeUninit::<MODULEENTRY32>::zeroed().assume_init() };
     module_entry.dwSize = std::mem::size_of_val(&module_entry) as u32;
 

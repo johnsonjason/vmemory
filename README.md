@@ -24,7 +24,7 @@ So this API allows for arbitrary reading/writing memory to other processes regar
 ## API
 
 ```Rust
-ProcessMemory::new_process(file_path: &str, arguments: &Vec<String>) -> Option<ProcessMemory>
+ProcessMemory::new_process(file_path: &str, arguments: &[String]) -> Option<ProcessMemory>
 ```
 
 Spawn a new process in a suspended state to be manually resumed via self.resume(), passing the file path of the process to start
@@ -38,7 +38,7 @@ Attach to a process with the process ID (PID). Returning a structure in an optio
 memory read/write operations
 
 ```Rust
-ProcessMemory::write_memory(&self, address: usize, data: &Vec<u8>, offset: bool)
+ProcessMemory::write_memory(&self, address: usize, data: &[u8], offset: bool)
 ```
 
 Write memory to the process. The memory to be written is the memory in the `data` parameter, at the location of `address` in the remote process. The `offset` boolean will specify whether the value of `address` is an offset relative to the first module/mapping loaded into the process (true), or if it is a direct address value to be written (false)

@@ -83,8 +83,8 @@ fn close_valid_handle(value: HANDLE) -> bool {
 // Separate a vector of strings into one string, delimited by space characters
 //
 #[cfg(target_family = "windows")]
-fn delimit(text: &Vec<String>) -> String {
-    let mut result: String = String::new();
+fn delimit(text: &[String]) -> String {
+    let mut result = String::new();
     for s in text {
         result.push_str(s.as_str());
         result.push(' ');
@@ -168,10 +168,10 @@ fn get_main_module(pid: u32) -> usize {
 // Parsing the arguments, and then replacing the module with execv(2)
 //
 #[cfg(target_vendor = "unknown")]
-fn create_reference_process(file_name: &str, arguments: &Vec<String>) {
+fn create_reference_process(file_name: &str, arguments: &[String]) {
     ptrace::traceme().unwrap();
     let cfile = CString::new(file_name).unwrap();
-    let mut cfile_args: Vec<CString> = vec![cfile];
+    let mut cfile_args = vec![cfile];
 
     for argument in arguments {
         cfile_args.push(CString::new(argument.as_str()).unwrap());
@@ -282,8 +282,8 @@ impl ProcessMemory {
     /// If the new process could not be created, this function will panic.
     #[must_use]
     #[cfg(target_vendor = "unknown")]
-    pub fn new_process(file_name: &str, arguments: &Vec<String>) -> Option<ProcessMemory> {
-        let pid: pid_t = unsafe { fork() };
+    pub fn new_process(file_name: &str, arguments: &[String]) -> Option<ProcessMemory> {
+        let pid = unsafe { fork() };
 
         match pid {
             0 => create_reference_process(file_name, arguments),
@@ -295,7 +295,7 @@ impl ProcessMemory {
         // Wait for the ptrace(2) and execv(2) operations to be successful
         //
         unsafe {
-            let mut status: i32 = 0;
+            let mut status = 0;
             waitpid(pid, &mut status, 0);
             if WIFSTOPPED(status) && WSTOPSIG(status) != SIGTRAP {
                 panic!("waitpid failed");
@@ -318,8 +318,8 @@ impl ProcessMemory {
     // Later resumed via public self.resume()
     //
     #[cfg(target_vendor = "apple")]
-    pub fn new_process(file_name: &str, arguments: &Vec<String>) -> Option<ProcessMemory> {
-        let mut pid: pid_t = 0;
+    pub fn new_process(file_name: &str, arguments: &[String]) -> Option<ProcessMemory> {
+        let mut pid = 0;
         unsafe {
             //
             // Allocate, initialize a POSIX spawn attribute structure with the flags POSIX_SPAWN_START_SUSPENDED which will create a process in a suspended state
@@ -382,7 +382,7 @@ impl ProcessMemory {
     // Create a new process for Windows, in a suspended state
     //
     #[cfg(target_family = "windows")]
-    pub fn new_process(file_path: &str, args: &Vec<String>) -> Option<ProcessMemory> {
+    pub fn new_process(file_path: &str, args: &[String]) -> Option<ProcessMemory> {
         use winapi::um::{
             processthreadsapi::{CreateProcessA, PROCESS_INFORMATION, STARTUPINFOA},
             winbase::CREATE_SUSPENDED,

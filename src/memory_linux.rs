@@ -7,7 +7,7 @@ use nix::sys::ptrace;
 //
 pub fn read_memory(pid: u32, address: usize, size: usize) -> Result<Vec<u8>, u32> {
     let nix_pid = nix::unistd::Pid::from_raw(pid as _);
-    let mut word_buffer: Vec<u8> = Vec::new();
+    let mut word_buffer = Vec::new();
 
     for n in (address..address + size + 16).step_by(std::mem::size_of::<c_long>()) {
         if word_buffer.len() > size {
@@ -15,8 +15,8 @@ pub fn read_memory(pid: u32, address: usize, size: usize) -> Result<Vec<u8>, u32
             break;
         }
 
-        let word: [u8; std::mem::size_of::<c_long>()] = match ptrace::read(nix_pid, n as _) {
-            Ok(val) => (val as usize).to_ne_bytes(),
+        let word = match ptrace::read(nix_pid, n as _) {
+            Ok(val) => val.to_ne_bytes(),
             Err(_) => break,
         };
 

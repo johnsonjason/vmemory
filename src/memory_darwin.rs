@@ -107,7 +107,7 @@ pub fn write_memory(target_task: u32, address: usize, buffer: &[u8]) -> Result<(
 //
 pub fn read_memory(target_task: u32, address: usize, size: usize) -> Result<Vec<u8>, u32> {
     let mut buf = vec![0_u8; size];
-    let mut read_len: u64 = 0;
+    let mut read_len = 0;
 
     let result = unsafe {
         mach_vm_read_overwrite(
@@ -134,7 +134,7 @@ fn get_protection(
     mut address: mach_vm_address_t,
 ) -> Result<(u32, usize, usize), u32> {
     let mut count = std::mem::size_of::<vm_region_basic_info_data_64_t>() as mach_msg_type_number_t;
-    let mut object_name: mach_port_t = 0;
+    let mut object_name = 0;
 
     let mut size = unsafe { std::mem::zeroed::<mach_vm_size_t>() };
     let mut info =
