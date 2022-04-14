@@ -1,6 +1,6 @@
 //! Read and write the virtual memory of other processes on Windows, Linux, and macOS. This attempts to write memory regardless of memory region protections such as being read-only
 //!
-//! Examples can be found at https://crates.io/crates/vmemory
+//! Examples can be found at `https://crates.io/crates/vmemory`
 #![allow(unused_imports)]
 #![allow(dead_code)]
 #[cfg(target_family = "windows")]
@@ -267,14 +267,14 @@ impl ProcessMemory {
         })
     }
 
-    /// This spawns a process suspended and has to be manually resumed via public self.resume()
+    /// This spawns a process suspended and has to be manually resumed via public `self.resume()`
     ///
-    /// On Linux, this creates a new process via fork() which maps to clone(2) depending on libc
-    /// ptrace the fork and replace the current image with a new one in create_reference_process
+    /// On Linux, this creates a new process via `fork()` which maps to `clone(2)` depending on libc
+    /// ptrace the fork and replace the current image with a new one in `create_reference_process`
     ///
-    /// On Windows, this calls CreateProcess with the flag CREATE_SUSPENDED
+    /// On Windows, this calls `CreateProcess` with the flag `CREATE_SUSPENDED`
     ///
-    /// On macOS, this calls posix_spawn(2) with the flag POSIX_SPAWN_START_SUSPENDED
+    /// On macOS, this calls `posix_spawn(2)` with the flag `POSIX_SPAWN_START_SUSPENDED`
     ///
     /// Accepts a file path, as well as arguments to the new process
     #[must_use]
@@ -528,7 +528,7 @@ impl ProcessMemory {
         self.base_address
     }
 
-    /// Kill the process by sending a forceful SIGKILL or via TerminateProcess
+    /// Kill the process by sending a forceful SIGKILL or via `TerminateProcess`
     pub fn kill(&self) {
         #[cfg(target_family = "unix")]
         unsafe {
