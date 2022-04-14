@@ -20,7 +20,7 @@ pub fn read_memory(pid: u32, address: usize, size: usize) -> Result<Vec<u8>, u32
             Err(_) => break,
         };
 
-        word_buffer.extend(word.iter().cloned());
+        word_buffer.extend(word.iter().copied());
     }
 
     Ok(word_buffer)

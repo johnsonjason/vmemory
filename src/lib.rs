@@ -458,17 +458,17 @@ impl ProcessMemory {
 
         #[cfg(target_family = "windows")]
         {
-            memory_windows::write_memory(self.handle as _, address, data).unwrap()
+            memory_windows::write_memory(self.handle as _, address, data).unwrap();
         }
 
         #[cfg(target_os = "macos")]
         {
-            memory_darwin::write_memory(self.handle as _, address, data).unwrap()
+            memory_darwin::write_memory(self.handle as _, address, data).unwrap();
         }
 
         #[cfg(target_vendor = "unknown")]
         {
-            memory_linux::write_memory(self.pid, address, data).unwrap()
+            memory_linux::write_memory(self.pid, address, data).unwrap();
         }
     }
 
